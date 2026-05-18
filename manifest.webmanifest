@@ -1,0 +1,21 @@
+{
+  "name": "GIFアニメ作成 - X/Threads投稿用",
+  "short_name": "GIFアニメ",
+  "description": "AIで生成したコマ割り画像から、XやThreadsに投稿できるアニメーションGIFを簡単に作成するPWA。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./app.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1115",
+  "theme_color": "#7c3aed",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "categories": ["photo", "social", "utilities"],
+  "screenshots": []
+}

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#7c3aed">
+<title>GIFアニメ作成</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GIFアニメ">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="appbar">
+  <a class="back" href="index.html" aria-label="ホームへ">←</a>
+  <div class="title">GIFアニメ作成</div>
+  <button class="iconbtn" id="resetBtn" title="作業リセット" aria-label="作業リセット">⟲</button>
+</header>
+
+<nav class="tabbar" role="tablist">
+  <button class="tab active" data-tab="prompt" role="tab">① プロンプト</button>
+  <button class="tab" data-tab="slice" role="tab">② 画像取込</button>
+  <button class="tab" data-tab="export" role="tab">③ 生成・保存</button>
+</nav>
+
+<main class="content">
+
+<!-- ============ ① プロンプト生成 ============ -->
+<section class="panel active" id="panel-prompt">
+  <p class="hint">ChatGPT / Gemini などにコピペできる「コマ割り画像生成プロンプト」を作ります。</p>
+
+  <div class="card">
+    <label class="field">
+      <span class="lbl">何を動かす？（被写体・シーン）</span>
+      <textarea id="pSubject" rows="3" placeholder="例: 猫が手を振っている。背景はパステルグリーン。" inputmode="text"></textarea>
+    </label>
+
+    <div class="row">
+      <label class="field flex">
+        <span class="lbl">コマ数</span>
+        <input type="number" id="pFrames" min="2" max="64" value="4" inputmode="numeric">
+      </label>
+      <label class="field flex">
+        <span class="lbl">グリッド形状</span>
+        <select id="pGrid">
+          <option value="auto">自動（コマ数から最適化）</option>
+          <option value="2x2">2 × 2</option>
+          <option value="3x3">3 × 3</option>
+          <option value="4x4">4 × 4</option>
+          <option value="1xN">横一列</option>
+          <option value="Nx1">縦一列</option>
+          <option value="2xN">2行に分割</option>
+        </select>
+      </label>
+    </div>
+
+    <details class="advanced">
+      <summary>詳細設定</summary>
+      <div class="adv-body">
+        <label class="field">
+          <span class="lbl">テイスト / 画風</span>
+          <input id="pStyle" placeholder="例: アニメ調 / 水彩風 / ピクセルアート" />
+        </label>
+        <label class="field">
+          <span class="lbl">背景色（コマ間の境界用）</span>
+          <select id="pBgColor">
+            <option value="white">白背景・黒い境界線</option>
+            <option value="black">黒背景・白い境界線</option>
+            <option value="transparent">透過背景・黒い境界線</option>
+            <option value="none">境界線なし（タイル接合）</option>
+          </select>
+        </label>
+        <label class="field row inline">
+          <input type="checkbox" id="pConsistent" checked>
+          <span>キャラクターの見た目を全コマで統一</span>
+        </label>
+        <label class="field row inline">
+          <input type="checkbox" id="pPingpong">
+          <span>逆再生で自然にループする動きにする</span>
+        </label>
+        <label class="field">
+          <span class="lbl">追加指示（任意）</span>
+          <textarea id="pExtra" rows="2" placeholder="例: 表情をオーバーに / 動きを大きく"></textarea>
+        </label>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button class="btn primary" id="pBuild">プロンプトを作る</button>
+    </div>
+  </div>
+
+  <div class="card" id="pResultCard" hidden>
+    <label class="field">
+      <span class="lbl">生成されたプロンプト</span>
+      <textarea id="pResult" rows="10" readonly></textarea>
+    </label>
+    <div class="actions">
+      <button class="btn primary" id="pCopy">📋 クリップボードへコピー</button>
+      <button class="btn ghost" id="pShare">共有…</button>
+    </div>
+    <p class="muted small">ChatGPT等の入力欄に貼り付け、生成された画像を ② で取り込んでください。</p>
+  </div>
+</section>
+
+<!-- ============ ② 画像取込・コマ割り ============ -->
+<section class="panel" id="panel-slice">
+  <p class="hint">AIで作ったコマ割り画像を取り込み、コマに分割します。</p>
+
+  <div class="card">
+    <div class="dropzone" id="dropzone">
+      <div class="dz-inner">
+        <div class="dz-icon">🖼️</div>
+        <div class="dz-text">
+          <b>画像をここへ</b><br>
+          <span class="muted">ドラッグ&ドロップ / タップしてファイル選択</span>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" id="pasteBtn">📋 クリップボードから貼り付け</button>
+      <button class="btn ghost" id="multiInputBtn">🖼️ 複数の画像をまとめて取込</button>
+      <input type="file" id="multiInput" accept="image/*" multiple hidden>
+    </div>
+    <p class="muted small">※ iOSでは「貼り付け」許可ダイアログが表示される場合があります。</p>
+  </div>
+
+  <div class="card" id="sliceCard" hidden>
+    <label class="field">
+      <span class="lbl">分割プリセット</span>
+      <div class="chips" id="presetChips">
+        <button class="chip" data-r="2" data-c="2">2 × 2</button>
+        <button class="chip" data-r="3" data-c="3">3 × 3</button>
+        <button class="chip" data-r="4" data-c="4">4 × 4</button>
+        <button class="chip" data-r="1" data-c="4">1 × 4</button>
+        <button class="chip" data-r="4" data-c="1">4 × 1</button>
+        <button class="chip" data-r="2" data-c="3">2 × 3</button>
+        <button class="chip" data-r="3" data-c="2">3 × 2</button>
+      </div>
+    </label>
+    <div class="row">
+      <label class="field flex">
+        <span class="lbl">行数</span>
+        <input type="number" id="sRows" min="1" max="20" value="2" inputmode="numeric">
+      </label>
+      <label class="field flex">
+        <span class="lbl">列数</span>
+        <input type="number" id="sCols" min="1" max="20" value="2" inputmode="numeric">
+      </label>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="sliceCanvas"></canvas>
+    </div>
+
+    <details class="advanced">
+      <summary>詳細設定（境界線・トリミング）</summary>
+      <div class="adv-body">
+        <label class="field">
+          <span class="lbl">境界線の余白（各コマから外側へ削る px）: <output id="sInsetOut">0</output></span>
+          <input type="range" id="sInset" min="0" max="40" step="1" value="0">
+        </label>
+        <label class="field">
+          <span class="lbl">外周マージン上 (px): <output id="sMtOut">0</output></span>
+          <input type="range" id="sMt" min="0" max="200" step="1" value="0">
+        </label>
+        <label class="field">
+          <span class="lbl">外周マージン左 (px): <output id="sMlOut">0</output></span>
+          <input type="range" id="sMl" min="0" max="200" step="1" value="0">
+        </label>
+        <label class="field">
+          <span class="lbl">外周マージン下 (px): <output id="sMbOut">0</output></span>
+          <input type="range" id="sMb" min="0" max="200" step="1" value="0">
+        </label>
+        <label class="field">
+          <span class="lbl">外周マージン右 (px): <output id="sMrOut">0</output></span>
+          <input type="range" id="sMr" min="0" max="200" step="1" value="0">
+        </label>
+        <label class="field row inline">
+          <input type="checkbox" id="sFlipOrder">
+          <span>左→右 ではなく 右→左 で読み取る</span>
+        </label>
+        <label class="field row inline">
+          <input type="checkbox" id="sColumnFirst">
+          <span>横優先ではなく 縦優先 で読み取る</span>
+        </label>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button class="btn primary" id="sliceApply">この設定でコマを切り出す</button>
+    </div>
+  </div>
+
+  <div class="card" id="framesCard" hidden>
+    <div class="row inline">
+      <strong>切り出されたコマ <span id="frameCount">0</span> 枚</strong>
+      <span class="muted small">— 並べ替え：ドラッグ / 除外：×ボタン</span>
+    </div>
+    <div class="frames-grid" id="framesGrid"></div>
+    <div class="actions">
+      <button class="btn ghost" id="reverseFrames">↺ 順序を反転</button>
+      <button class="btn ghost" id="restoreFrames">除外を戻す</button>
+      <button class="btn primary" id="gotoExport">③ 生成へ進む →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ③ 生成・プレビュー・保存 ============ -->
+<section class="panel" id="panel-export">
+  <p class="hint">設定を選んで「GIFを生成」を押すと、その場で再生・保存できます。</p>
+
+  <div class="card">
+    <label class="field">
+      <span class="lbl">投稿先プリセット（ワンタップ最適化）</span>
+      <div class="chips" id="platformChips">
+        <button class="chip" data-preset="x">𝕏 (Twitter) 最適</button>
+        <button class="chip" data-preset="threads">Threads 最適</button>
+        <button class="chip" data-preset="square">正方形（汎用）</button>
+        <button class="chip" data-preset="story">縦長 9:16</button>
+      </div>
+    </label>
+
+    <div class="row">
+      <label class="field flex">
+        <span class="lbl">速さ</span>
+        <select id="eSpeed">
+          <option value="120">超速い（120ms）</option>
+          <option value="200" selected>速い（200ms）</option>
+          <option value="333">普通（333ms / 3fps）</option>
+          <option value="500">ゆっくり（500ms）</option>
+          <option value="800">とてもゆっくり（800ms）</option>
+        </select>
+      </label>
+      <label class="field flex">
+        <span class="lbl">ループ</span>
+        <select id="eLoop">
+          <option value="0" selected>無限ループ</option>
+          <option value="1">1回だけ</option>
+          <option value="2">2回</option>
+          <option value="3">3回</option>
+          <option value="5">5回</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row">
+      <label class="field flex">
+        <span class="lbl">再生方向</span>
+        <select id="ePlayback">
+          <option value="forward" selected>順再生</option>
+          <option value="reverse">逆再生</option>
+          <option value="pingpong">ピンポン（往復）</option>
+        </select>
+      </label>
+      <label class="field flex">
+        <span class="lbl">出力サイズ</span>
+        <select id="eSize">
+          <option value="64">極小 64px（絵文字サイズ）</option>
+          <option value="96">極小 96px</option>
+          <option value="128">小 128px（Slack絵文字相当）</option>
+          <option value="192">小 192px</option>
+          <option value="256">小 256px</option>
+          <option value="384">中 384px</option>
+          <option value="512" selected>標準 512px</option>
+          <option value="640">大 640px</option>
+          <option value="720">縦長向け 720px</option>
+          <option value="800">特大 800px</option>
+          <option value="original">元サイズ</option>
+        </select>
+      </label>
+    </div>
+
+    <details class="advanced">
+      <summary>詳細設定（こだわる人向け）</summary>
+      <div class="adv-body">
+
+        <fieldset class="group">
+          <legend>速度・タイミング</legend>
+          <label class="field">
+            <span class="lbl">コマ表示時間 ms（一括指定）: <output id="eDelayOut">200</output></span>
+            <input type="range" id="eDelay" min="20" max="2000" step="10" value="200">
+          </label>
+          <div class="per-frame" id="perFrameDelays">
+            <p class="muted small">↓ コマごとに個別調整（タメや緩急に）</p>
+          </div>
+          <label class="field row inline">
+            <input type="checkbox" id="eEasing">
+            <span>イージング（最初/最後をゆっくり）</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>サイズ・形状</legend>
+          <label class="field">
+            <span class="lbl">アスペクト比</span>
+            <select id="eAspect">
+              <option value="1:1" selected>1:1 正方形</option>
+              <option value="4:5">4:5 ポートレート</option>
+              <option value="16:9">16:9 横長</option>
+              <option value="9:16">9:16 縦長</option>
+              <option value="original">元のまま</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="lbl">フィット方法</span>
+            <select id="eFit">
+              <option value="contain" selected>余白で収める (contain)</option>
+              <option value="cover">トリミングで埋める (cover)</option>
+              <option value="stretch">伸縮 (stretch)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="lbl">背景色（余白に使う色）</span>
+            <input type="color" id="eBg" value="#ffffff">
+          </label>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>ファイルサイズ最適化</legend>
+          <label class="field">
+            <span class="lbl">パレット色数: <output id="eColorsOut">128</output></span>
+            <input type="range" id="eColors" min="2" max="256" step="1" value="128">
+          </label>
+          <label class="field">
+            <span class="lbl">品質（gif.js）: <output id="eQualOut">10</output></span>
+            <input type="range" id="eQual" min="1" max="30" step="1" value="10">
+            <span class="muted small">数値が小さいほど高画質・大きいほど高速</span>
+          </label>
+          <label class="field row inline">
+            <input type="checkbox" id="eDither" checked>
+            <span>ディザリング</span>
+          </label>
+          <label class="field">
+            <span class="lbl">目標ファイルサイズ上限</span>
+            <select id="eTargetSize">
+              <option value="0" selected>指定しない</option>
+              <option value="5242880">5 MB（軽量）</option>
+              <option value="10485760">10 MB</option>
+              <option value="15728640">15 MB（X上限）</option>
+            </select>
+          </label>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>背景透過（簡易）</legend>
+          <label class="field row inline">
+            <input type="checkbox" id="eTransparent">
+            <span>単色背景を透過する</span>
+          </label>
+          <label class="field">
+            <span class="lbl">透過する色</span>
+            <input type="color" id="eTransColor" value="#ffffff">
+          </label>
+          <label class="field">
+            <span class="lbl">許容差: <output id="eTransTolOut">24</output></span>
+            <input type="range" id="eTransTol" min="0" max="80" step="1" value="24">
+          </label>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>テキストオーバーレイ</legend>
+          <p class="muted small">各コマに表示するテキストを入力できます（空欄なら表示しません）。</p>
+          <div id="overlayList" class="overlay-list"></div>
+          <label class="field">
+            <span class="lbl">文字サイズ %（画像幅基準）: <output id="oSizeOut">8</output></span>
+            <input type="range" id="oSize" min="3" max="20" step="1" value="8">
+          </label>
+          <label class="field">
+            <span class="lbl">文字色</span>
+            <input type="color" id="oColor" value="#ffffff">
+          </label>
+          <label class="field">
+            <span class="lbl">縁取り色</span>
+            <input type="color" id="oStroke" value="#000000">
+          </label>
+          <label class="field">
+            <span class="lbl">配置</span>
+            <select id="oAlign">
+              <option value="top">上</option>
+              <option value="middle">中央</option>
+              <option value="bottom" selected>下</option>
+            </select>
+          </label>
+        </fieldset>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button class="btn primary" id="generateBtn">▶ GIFを生成</button>
+      <div class="progress" id="genProgress" hidden>
+        <div class="bar" id="genBar"></div>
+        <span class="prog-text" id="genText">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="previewCard" hidden>
+    <strong>プレビュー</strong>
+    <div class="preview-wrap">
+      <img id="previewImg" alt="生成されたGIF">
+    </div>
+    <p class="muted small" id="previewMeta"></p>
+    <div class="actions">
+      <button class="btn primary" id="shareBtn">📤 共有 / 保存</button>
+      <a class="btn ghost" id="downloadBtn" download="anime.gif">⬇ ダウンロード</a>
+      <button class="btn ghost" id="copyCaptionBtn">📋 投稿用テキストをコピー</button>
+    </div>
+    <details class="advanced">
+      <summary>投稿用テキスト・ハッシュタグ</summary>
+      <div class="adv-body">
+        <label class="field">
+          <span class="lbl">キャプション</span>
+          <textarea id="postCaption" rows="3" placeholder="例: 描いてみた #GIF #アニメ"></textarea>
+        </label>
+        <label class="field">
+          <span class="lbl">ハッシュタグ候補</span>
+          <div class="chips" id="tagChips">
+            <button class="chip" data-tag="#GIF">#GIF</button>
+            <button class="chip" data-tag="#アニメ">#アニメ</button>
+            <button class="chip" data-tag="#イラスト">#イラスト</button>
+            <button class="chip" data-tag="#AIart">#AIart</button>
+            <button class="chip" data-tag="#手描き">#手描き</button>
+            <button class="chip" data-tag="#1日1枚">#1日1枚</button>
+          </div>
+        </label>
+      </div>
+    </details>
+    <p class="muted small">iOSは「共有」→「画像を保存」で写真アプリへ。Androidは「ダウンロード」または共有で各SNSへ。</p>
+  </div>
+</section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal" id="installModal" hidden>
+  <div class="modal-card">
+    <h3>ホーム画面に追加できます</h3>
+    <p>このアプリをスマホのアプリのように使えます。</p>
+    <div class="actions">
+      <button class="btn primary" id="installModalBtn">追加する</button>
+      <button class="btn ghost" id="installModalClose">あとで</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/lib/gif.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/prompt.js"></script>
+<script src="js/slicer.js"></script>
+<script src="js/overlay.js"></script>
+<script src="js/gif-encoder.js"></script>
+<script src="js/share.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

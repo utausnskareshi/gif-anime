@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7c3aed">
+<meta name="description" content="X/Threadsに投稿するアニメーションGIFをスマホで簡単に作成するPWA。AIで生成したコマ割り画像から1タップでGIF化。">
+<title>GIFアニメ作成 - X/Threads投稿用PWA</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GIFアニメ">
+<link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="logo-badge" aria-hidden="true">
+      <img src="icons/icon.svg" alt="" width="72" height="72">
+    </div>
+    <h1>GIFアニメ作成<br><span class="hero-sub">X / Threads 投稿用ツール</span></h1>
+    <p class="lead">
+      ChatGPT などのAIで生成した<strong>コマ割り画像</strong>を取り込み、<br>
+      スマホだけでアニメーションGIFを作れる<strong>オフライン対応PWA</strong>です。
+    </p>
+    <div class="cta-row">
+      <a class="cta primary" href="app.html">アプリを開く</a>
+      <a class="cta ghost" href="#install">導入手順を見る</a>
+    </div>
+    <p class="install-prompt" id="installPrompt" hidden>
+      <button id="installBtn" class="cta primary small">アプリをホーム画面に追加</button>
+      <span class="muted">タップで「GIFアニメ作成」をインストール（アイコンがホーム画面に追加されます）</span>
+    </p>
+  </div>
+</header>
+
+<main>
+  <section class="block">
+    <h2>このアプリでできること</h2>
+    <ul class="feature-grid">
+      <li><b>🪄 プロンプト生成</b><br>ChatGPTに貼るだけのコマ割り画像生成用プロンプトを自動で組み立てます。</li>
+      <li><b>📋 簡単入力</b><br>クリップボード貼り付け / ファイル選択 / ドラッグ＆ドロップに対応。</li>
+      <li><b>✂️ コマ割り編集</b><br>行×列の指定でグリッド分割。境界線の余白調整・並べ替え・除外もできます。</li>
+      <li><b>🎞️ GIF生成</b><br>速度・ループ・サイズなど詳細設定可能。逆再生・ピンポンも対応。</li>
+      <li><b>👀 プレビュー</b><br>作ったGIFを即その場で再生して確認できます。</li>
+      <li><b>💾 端末に保存</b><br>iOSは「写真」へ、Androidは直接ダウンロード。共有シートから各SNSへも投稿可。</li>
+      <li><b>💬 テキスト乗せ</b><br>各コマにセリフや字幕を入れられます。</li>
+      <li><b>📱 X/Threads最適化</b><br>サイズ・秒数・ループをワンボタンでSNS最適化。</li>
+      <li><b>📦 オフライン動作</b><br>一度開けば、機内モードでも全機能が使えます。</li>
+    </ul>
+  </section>
+
+  <section class="block" id="install">
+    <h2>スマホへのインストール手順</h2>
+
+    <div class="tabbar" role="tablist">
+      <button class="tab active" data-pane="ios" role="tab">📱 iPhone (Safari)</button>
+      <button class="tab" data-pane="android" role="tab">🤖 Android (Chrome)</button>
+    </div>
+
+    <div class="pane active" id="pane-ios">
+      <ol class="steps">
+        <li><b>Safari</b> でこのページを開いてください（Chromeでは追加できません）。</li>
+        <li>画面下中央の<b>「共有」ボタン</b>（□に↑のアイコン）をタップ。</li>
+        <li>メニューを下にスクロールし<b>「ホーム画面に追加」</b>をタップ。</li>
+        <li>名前を確認して右上の<b>「追加」</b>をタップ。</li>
+        <li>ホーム画面のアイコンから起動できます。<b>初回起動後はオフラインでも動作</b>します。</li>
+      </ol>
+      <p class="note">※ Safariのプライベートブラウズ中は追加できません。通常モードでお試しください。</p>
+    </div>
+
+    <div class="pane" id="pane-android">
+      <ol class="steps">
+        <li><b>Chrome</b> でこのページを開いてください。</li>
+        <li>下部または右上に表示される「ホーム画面に追加」バナー、または<b>「⋮ メニュー」→「ホーム画面に追加」</b>をタップ。</li>
+        <li>「追加」をタップで完了。アプリ一覧／ホーム画面にアイコンが作成されます。</li>
+        <li>初回起動後はオフラインでも全機能利用可能です。</li>
+      </ol>
+      <p class="note">※ 上部の「ホーム画面に追加」ボタンが表示される場合はそちらが最短です。</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>使い方の流れ</h2>
+    <ol class="howto">
+      <li>
+        <h3>1. プロンプトを作る</h3>
+        <p>アプリの「① プロンプト生成」タブで、コマ数・グリッド形状・キャラクターや動作の説明を入力。生成されたプロンプトをコピーします。</p>
+      </li>
+      <li>
+        <h3>2. ChatGPT等で画像を生成</h3>
+        <p>コピーしたプロンプトを ChatGPT / Gemini / Copilot などに貼り付け、コマ割り画像を生成。画像をスマホに保存またはコピーします。</p>
+      </li>
+      <li>
+        <h3>3. 画像をアプリに取り込む</h3>
+        <p>「② 画像取込・コマ割り」タブで <b>貼り付け</b> または <b>ファイル選択</b> 。行数×列数を指定して各コマに分割。並べ替え・除外も可能。</p>
+      </li>
+      <li>
+        <h3>4. GIFを生成・確認・保存</h3>
+        <p>「③ 生成・プレビュー・保存」タブで再生時間やループを設定し<b>生成</b>。プレビュー確認後、<b>共有</b>ボタンで端末へ保存します。</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block tips">
+    <h2>X / Threads 投稿時のコツ</h2>
+    <ul>
+      <li><b>サイズは512×512前後</b>。XのGIFは最大15MB・ループ再生のため、コマ数とパレット色数を抑えるとスムーズに表示されます。</li>
+      <li><b>1〜3秒の短いループ</b>がもっとも目に留まります。アプリの「ピンポン再生」で少ないコマでも自然な動きに。</li>
+      <li><b>余白を控えめに</b>。タイムライン上では小さく表示されるため、被写体は中央寄せ大きめが◎。</li>
+      <li><b>テキスト乗せ</b>で内容を1〜2語で示すと反応率が上がります。アプリ内のオーバーレイ機能を活用してください。</li>
+    </ul>
+  </section>
+
+  <section class="block faq">
+    <h2>よくある質問</h2>
+    <details>
+      <summary>本当にオフラインで動きますか？</summary>
+      <p>はい。最初にこのページとアプリを一度開くと、必要なファイルがすべて端末にキャッシュされます。以降は機内モードでもGIF作成までフル機能でご利用いただけます。</p>
+    </details>
+    <details>
+      <summary>画像はサーバーに送られますか？</summary>
+      <p>送られません。画像処理とGIF生成はすべて端末内（ブラウザ内）で行われます。ネット接続は不要です。</p>
+    </details>
+    <details>
+      <summary>iOS では写真にどう保存されますか？</summary>
+      <p>「共有」ボタンから iOS の共有シートが開き、「画像を保存」を選ぶと写真アプリに保存されます。動作しない端末向けに、長押し保存もご利用いただけます。</p>
+    </details>
+    <details>
+      <summary>背景透過は使えますか？</summary>
+      <p>白などの単色背景を簡易的に透過化する機能を搭載しています。詳細設定タブから利用できます。</p>
+    </details>
+  </section>
+</main>
+
+<footer>
+  <p>© GIFアニメ作成PWA — GitHub Pages 配信 / 100% クライアントサイド処理</p>
+</footer>
+
+<script src="js/landing.js" defer></script>
+</body>
+</html>
